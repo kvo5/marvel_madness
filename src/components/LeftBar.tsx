@@ -1,5 +1,9 @@
 import Link from "next/link";
 import Image from "./Image";
+import Socket from "./Socket";
+import Notification from "./Notification";
+import { currentUser } from "@clerk/nextjs/server";
+import Logout from "./Logout";
 
 const menuList = [
   {
@@ -9,46 +13,16 @@ const menuList = [
     icon: "home.svg",
   },
   {
-    id: 2,
-    name: "Explore",
-    link: "/",
-    icon: "explore.svg",
-  },
-  {
-    id: 3,
-    name: "Notification",
-    link: "/",
-    icon: "notification.svg",
-  },
-  {
-    id: 4,
-    name: "Messages",
-    link: "/",
-    icon: "message.svg",
-  },
-  {
     id: 5,
     name: "Bookmarks",
     link: "/",
     icon: "bookmark.svg",
   },
   {
-    id: 6,
-    name: "Jobs",
-    link: "/",
-    icon: "job.svg",
-  },
-  {
     id: 7,
-    name: "Communities",
+    name: "Teams",
     link: "/",
     icon: "community.svg",
-  },
-  {
-    id: 8,
-    name: "Premium",
-    link: "/",
-    icon: "logo.svg",
   },
   {
     id: 9,
@@ -58,13 +32,15 @@ const menuList = [
   },
   {
     id: 10,
-    name: "More",
+    name: "Settings",
     link: "/",
-    icon: "more.svg",
+    icon: "settings.svg",
   },
 ];
 
-const LeftBar = () => {
+const LeftBar = async () => {
+  const user = await currentUser();
+
   return (
     <div className="h-screen sticky top-0 flex flex-col justify-between pt-2 pb-8">
       {/* LOGO MENU BUTTON */}
@@ -75,20 +51,26 @@ const LeftBar = () => {
         </Link>
         {/* MENU LIST */}
         <div className="flex flex-col gap-4">
-          {menuList.map((item) => (
-            <Link
-              href={item.link}
-              className="p-2 rounded-full hover:bg-[#181818] flex items-center gap-4"
-              key={item.id}
-            >
-              <Image
-                path={`icons/${item.icon}`}
-                alt={item.name}
-                w={24}
-                h={24}
-              />
-              <span className="hidden xxl:inline">{item.name}</span>
-            </Link>
+          {menuList.map((item, i) => (
+            <div key={item.id || i}>
+              {i === 2 && user && (
+                <div>
+                  <Notification />
+                </div>
+              )}
+              <Link
+                href={item.link}
+                className="p-2 rounded-full hover:bg-[#181818] flex items-center gap-4"
+              >
+                <Image
+                  path={`icons/${item.icon}`}
+                  alt={item.name}
+                  w={24}
+                  h={24}
+                />
+                <span className="hidden xxl:inline">{item.name}</span>
+              </Link>
+            </div>
           ))}
         </div>
         {/* BUTTON */}
@@ -105,19 +87,32 @@ const LeftBar = () => {
           Post
         </Link>
       </div>
-      {/* USER */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 relative rounded-full overflow-hidden">
-            <Image path="/general/avatar.png" alt="lama dev" w={100} h={100} tr={true} />
+      {user && (
+        <>
+          <Socket />
+          {/* USER */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 relative rounded-full overflow-hidden">
+                <Image
+                  src={user?.imageUrl}
+                  alt=""
+                  w={100}
+                  h={100}
+                  tr={true}
+                />
+              </div>
+              <div className="hidden xxl:flex flex-col">
+                <span className="font-bold">{user?.username}</span>
+                <span className="text-sm text-textGray">@{user?.username}</span>
+              </div>
+            </div>
+            {/* <div className="hidden xxl:block cursor-pointer font-bold">...</div> */}
+            {/* ADD LOGOUT */}
+            <Logout/>
           </div>
-          <div className="hidden xxl:flex flex-col">
-            <span className="font-bold">Lama Dev</span>
-            <span className="text-sm text-textGray">@lamaWebDev</span>
-          </div>
-        </div>
-        <div className="hidden xxl:block cursor-pointer font-bold">...</div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

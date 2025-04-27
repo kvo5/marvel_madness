@@ -21,7 +21,7 @@ export default {
         textGrayLight: "#e7e9ea",
         borderGray: "#ffe046",
         inputGray: "#202327",
-        iconBlue: "#1d9bf0",
+        iconBlue: "#ffe046",
         iconGreen: "#00ba7c",
         iconPink: "#f91880",
       },

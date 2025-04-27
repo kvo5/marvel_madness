@@ -145,35 +145,7 @@ const Share = () => {
               />
             </label>
             <Image
-              path="icons/gif.svg"
-              alt=""
-              w={20}
-              h={20}
-              className="cursor-pointer"
-            />
-            <Image
-              path="icons/poll.svg"
-              alt=""
-              w={20}
-              h={20}
-              className="cursor-pointer"
-            />
-            <Image
               path="icons/emoji.svg"
-              alt=""
-              w={20}
-              h={20}
-              className="cursor-pointer"
-            />
-            <Image
-              path="icons/schedule.svg"
-              alt=""
-              w={20}
-              h={20}
-              className="cursor-pointer"
-            />
-            <Image
-              path="icons/location.svg"
               alt=""
               w={20}
               h={20}
