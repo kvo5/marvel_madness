@@ -1,15 +1,20 @@
 "use client";
 
 import React, { useActionState, useEffect, useRef, useState } from "react";
-import Image from "./Image";
-import NextImage from "next/image";
+import CustomImage from "./Image"; // Alias the custom component
+import NextImage from "next/image"; // Keep next/image
 import ImageEditor from "./ImageEditor";
 import { useUser } from "@clerk/nextjs";
 import { addPost } from "@/action";
+import { useQueryClient } from "@tanstack/react-query";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 const Share = () => {
+  const queryClient = useQueryClient();
   const [media, setMedia] = useState<File | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [desc, setDesc] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [settings, setSettings] = useState<{
     type: "original" | "wide" | "square";
     sensitive: boolean;
@@ -39,9 +44,19 @@ const Share = () => {
     if (state.success) {
       formRef.current?.reset();
       setMedia(null);
+      setDesc(""); // Reset description
       setSettings({ type: "original", sensitive: false });
+      // Remove client-side invalidation; rely on revalidatePath in the server action
+      // queryClient.invalidateQueries({ queryKey: ["posts"] });
     }
+    // We can remove queryClient from dependency array if it's no longer used in the effect
   }, [state]);
+
+  const handleEmoji = (e: { emoji: string }) => {
+    setDesc((prev) => prev + e.emoji);
+    setShowEmojiPicker(false);
+  };
+
 
   return (
     <form
@@ -52,7 +67,14 @@ const Share = () => {
     >
       {/* AVATAR */}
       <div className="relative w-10 h-10 rounded-full overflow-hidden">
-        <Image src={user?.imageUrl} alt="" w={100} h={100} tr={true} />
+        {/* Use standard next/image */}
+        <NextImage
+          // Prioritize publicMetadata.imageUrl, fallback to imageUrl, then static image
+          src={user?.publicMetadata?.imageUrl as string || user?.imageUrl || "/general/noAvatar.png"}
+          alt="User Avatar"
+          fill // Use fill to cover the container
+          className="object-cover" // Ensure image covers the area
+        />
       </div>
       {/* OTHERS */}
       <div className="flex-1 flex flex-col gap-4">
@@ -73,6 +95,8 @@ const Share = () => {
         <input
           type="text"
           name="desc"
+          value={desc} // Bind value to state
+          onChange={(e) => setDesc(e.target.value)} // Update state on change
           placeholder="What is happening?!"
           className="bg-transparent outline-none placeholder:text-textGray text-xl"
         />
@@ -126,7 +150,8 @@ const Share = () => {
           />
         )}
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex gap-4 flex-wrap">
+          {/* Make this div relative for emoji picker positioning */}
+          <div className="flex gap-4 flex-wrap relative">
             <input
               type="file"
               name="file"
@@ -136,7 +161,8 @@ const Share = () => {
               accept="image/*,video/*"
             />
             <label htmlFor="file">
-              <Image
+              {/* Use aliased custom image for icons if needed */}
+              <CustomImage
                 path="icons/image.svg"
                 alt=""
                 w={20}
@@ -144,19 +170,31 @@ const Share = () => {
                 className="cursor-pointer"
               />
             </label>
-            <Image
-              path="icons/emoji.svg"
-              alt=""
-              w={20}
-              h={20}
-              className="cursor-pointer"
-            />
+            <div onClick={() => setShowEmojiPicker((prev) => !prev)}>
+               {/* Use aliased custom image for icons if needed */}
+              <CustomImage
+                path="icons/emoji.svg"
+                alt="Add emoji"
+                w={20}
+                h={20}
+                className="cursor-pointer"
+              />
+            </div>
+             {showEmojiPicker && (
+              /* Adjust positioning: top-8 to appear below the icon, left-0 */
+              <div className="absolute top-8 left-0 z-30">
+                <EmojiPicker
+                  theme={Theme.DARK}
+                  onEmojiClick={handleEmoji}
+                />
+              </div>
+            )}
           </div>
           <button
-            className="bg-white text-black font-bold rounded-full py-2 px-4 disabled:cursor-not-allowed"
-            disabled={isPending}
+            className="bg-white text-black font-bold rounded-full py-2 px-4 disabled:cursor-not-allowed disabled:bg-slate-200" // Added disabled style
+            disabled={isPending || (!desc && !media)} // Disable if pending or no content
           >
-            {isPending ? "Posting" : "Post"}
+            {isPending ? "Posting..." : "Post"}
           </button>
           {state.error && (
             <span className="text-red-300 p-4">Something went wrong!</span>

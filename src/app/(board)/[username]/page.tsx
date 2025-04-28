@@ -1,6 +1,9 @@
 import Feed from "@/components/Feed";
 import FollowButton from "@/components/FollowButton";
+// Re-enable import for custom Image component
 import Image from "@/components/Image";
+// Remove import for next/image
+// import Image from "next/image";
 import { prisma } from "@/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
@@ -17,10 +20,23 @@ const UserPage = async ({
 
   const user = await prisma.user.findUnique({
     where: { username: username },
-    include: {
+    // Select role and rank explicitly, along with other needed fields
+    select: {
+      id: true,
+      // email: true, // Not needed on profile page
+      username: true,
+      displayName: true,
+      bio: true,
+      location: true,
+      role: true, // Fetch role
+      rank: true, // Fetch rank
+      img: true,
+      cover: true,
+      createdAt: true,
+      // updatedAt: true, // Not needed on profile page
       _count: { select: { followers: true, followings: true } },
       followings: userId ? { where: { followerId: userId } } : undefined,
-    },
+    }
   });
 
   console.log(userId);
@@ -31,7 +47,8 @@ const UserPage = async ({
       {/* PROFILE TITLE */}
       <div className="flex items-center gap-8 sticky top-0 backdrop-blur-md p-4 z-10 bg-[#00000084]">
         <Link href="/">
-          <Image path="icons/back.svg" alt="back" w={24} h={24} />
+          {/* Use standard img tag */}
+          <img src="/icons/back.svg" alt="back" width={24} height={24} />
         </Link>
         <h1 className="font-bold text-lg">{user.displayName}</h1>
       </div>
@@ -41,28 +58,31 @@ const UserPage = async ({
         <div className="relative w-full -z-10">
           {/* COVER */}
           <div className="w-full aspect-[3/1] relative">
+            {/* Revert to original custom Image component for cover */}
             <Image
-              path={user.cover || "general/noCover.png"}
-              alt=""
-              w={600}
-              h={200}
-              tr={true}
+              path={user.cover || "general/noCover.png"} // Use path prop as before
+              alt="Cover image"
+              w={600} // Original width
+              h={200} // Original height
+              tr={true} // Original transformation prop
             />
           </div>
           {/* AVATAR */}
           <div className="w-1/5 aspect-square rounded-full overflow-hidden border-4 border-black bg-gray-300 absolute left-4 -translate-y-1/2">
+            {/* Revert to original custom Image component for avatar */}
             <Image
-              path={user.img || "general/noAvatar.png"}
-              alt=""
-              w={100}
-              h={100}
-              tr={true}
+              path={user.img || "general/noAvatar.png"} // Use path prop as before
+              alt="User avatar"
+              w={100} // Original width
+              h={100} // Original height
+              tr={true} // Original transformation prop
             />
           </div>
         </div>
         <div className="flex w-full items-center justify-end gap-2 p-2">
           <div className="w-9 h-9 flex items-center justify-center rounded-full border-[1px] border-gray-500 cursor-pointer">
-            <Image path="icons/explore.svg" alt="more" w={20} h={20} />
+            {/* Use standard img tag */}
+            <img src="/icons/explore.svg" alt="more" width={20} height={20} />
           </div>
           {userId && (
             <FollowButton
@@ -79,22 +99,49 @@ const UserPage = async ({
             <h1 className="text-2xl font-bold">{user.displayName}</h1>
             <span className="text-textGray text-sm">@{user.username}</span>
           </div>
-          {user.bio && <p>{user.bio}</p>}
-          {/* JOB & LOCATION & DATE */}
+          {user.bio && <p className="mb-2">{user.bio}</p>}
+          {/* ROLE & RANK */}
+          <div className="flex gap-4 text-textGray text-[15px] mb-2">
+            {user.role && (
+              <div className="flex items-center gap-1">
+                {/* Use standard img tag for local public assets */}
+                <img
+                  src={`/ranks/${user.role}_Icon.webp`} // Path relative to public folder
+                  alt={`${user.role} Role`}
+                  width={16}
+                  height={16}
+                  className="object-contain" // Added for better image scaling
+                />
+                <span className="capitalize">{user.role.toLowerCase()}</span>
+              </div>
+            )}
+            {user.rank && (
+              <div className="flex items-center gap-1">
+                 {/* Use standard img tag for local public assets */}
+                <img
+                  // Extract only the rank name (e.g., "DIAMOND" from "DIAMOND II") for the filename
+                  src={`/ranks/${user.rank.split(" ")[0]}_Rank.webp`}
+                  alt={`${user.rank} Rank`}
+                  width={16}
+                  height={16}
+                  className="object-contain" // Added for better image scaling
+                />
+                <span>{user.rank}</span>
+              </div>
+            )}
+          </div>
+          {/* LOCATION & DATE */}
           <div className="flex gap-4 text-textGray text-[15px]">
             {user.location && (
               <div className="flex items-center gap-2">
-                <Image
-                  path="icons/userLocation.svg"
-                  alt="location"
-                  w={20}
-                  h={20}
-                />
+                 {/* Use standard img tag */}
+                <img src="/icons/userLocation.svg" alt="location" width={20} height={20} />
                 <span>{user.location}</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Image path="icons/date.svg" alt="date" w={20} h={20} />
+               {/* Use standard img tag */}
+              <img src="/icons/date.svg" alt="date" width={20} height={20} />
               <span>
                 Joined{" "}
                 {new Date(user.createdAt.toString()).toLocaleDateString(

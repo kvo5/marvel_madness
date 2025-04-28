@@ -113,7 +113,7 @@ const Post = ({
                 )}
               </div>
             </Link>
-            <PostInfo />
+            <PostInfo postId={originalPost.id} postUserId={originalPost.userId} />
           </div>
           {/* TEXT & MEDIA */}
           <Link
@@ -124,21 +124,26 @@ const Post = ({
             </p>
           </Link>
           {originalPost.img && (
-            <div className="overflow-hidden">
+            // Remove overflow-hidden for natural height; add rounded corners if desired
+            <div className="rounded-lg">
               <Image
                 path={originalPost.img}
                 alt=""
-                w={600}
-                h={originalPost.imgHeight || 600}
-                className={originalPost.isSensitive ? "blur-3xl" : ""}
+                // Remove fixed w/h props, rely on CSS
+                // w={600}
+                // h={originalPost.imgHeight || 600}
+                // Apply responsive styles via className
+                className={`max-w-full h-auto block ${originalPost.isSensitive ? "blur-3xl" : ""}`}
               />
             </div>
           )}
           {originalPost.video && (
-            <div className="rounded-lg overflow-hidden">
+            // Remove overflow-hidden for natural height
+            <div className="rounded-lg">
               <Video
                 path={originalPost.video}
-                className={originalPost.isSensitive ? "blur-3xl" : ""}
+                 // Apply responsive styles via className
+                className={`max-w-full h-auto block ${originalPost.isSensitive ? "blur-3xl" : ""}`}
               />
             </div>
           )}
