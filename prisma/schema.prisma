@@ -33,6 +33,18 @@ model User {
 
   followers  Follow[] @relation("UserFollowers")
   followings Follow[] @relation("UserFollowings")
+
+  // --- New Team Relations ---
+
+  // Team Created: Link to the team this user created (if any)
+  createdTeam Team? @relation("TeamCreator")
+
+  // Team Membership: Link to the team this user is a member of (if any)
+  teamId String? // Foreign key to the Team model. Nullable = user might not be in a team.
+  team   Team?   @relation("TeamMembers", fields: [teamId], references: [id]) // Relation field
+
+  // Whitelisted On: Link to teams where this user is on the whitelist
+  whitelistedOnTeams Team[] @relation("TeamWhitelist")
 }
 
 model Post {
@@ -103,4 +115,27 @@ enum Role {
  DUELIST
  VANGUARD
  STRATEGIST
+}
+
+// Add this new model to your schema.prisma file
+
+model Team {
+  id        String   @id @default(cuid()) // Using cuid() for unique IDs
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- Relationships ---
+
+  // Creator: One User creates one Team (enforced by @unique)
+  creatorId String @unique // This constraint ensures a User can only create one Team
+  creator   User   @relation("TeamCreator", fields: [creatorId], references: [id])
+
+  // Members: One Team has many Users, one User belongs to max one Team
+  members User[] @relation("TeamMembers") // List of users who are members
+
+  // Whitelist: Many Teams can whitelist many Users
+  whitelistedUsers User[] @relation("TeamWhitelist") // Users allowed to join this team
+
+  @@index([name]) // Optional: Index name for faster lookups if needed
 }
