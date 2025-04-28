@@ -85,11 +85,41 @@ export async function POST(req: Request) {
       return new Response("User created", { status: 201 }); // Use 201 for resource creation
     } catch (err) {
       console.error("Error processing user.created webhook:", err);
-      // Check for unique constraint violation (user might already exist)
+      // Check for unique constraint violation
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-         console.warn(`User ${evt.data.id} already exists in database.`);
-         return new Response("User already exists", { status: 409 }); // Conflict
-      }
+        // User might already exist (e.g., previous delete failed, unique email constraint)
+        // Attempt to update the existing user record with the new Clerk ID and details
+
+        // Define emailToFind *before* the try block to make it accessible in catch
+        const { id, email_addresses, username, image_url } = evt.data; // Re-destructure for clarity
+        const emailToFind = email_addresses?.[0]?.email_address;
+        console.warn(`Unique constraint violation for user.created. Attempting to update existing user by email: ${emailToFind}`);
+
+        if (!emailToFind) {
+          console.error("Update attempt failed: Email address missing in webhook payload.");
+          return new Response("Error: Missing email for update", { status: 400 });
+        }
+
+        try { // Inner try block starts here
+          await prisma.user.update({
+            where: { email: emailToFind }, // Find the existing user by email
+            data: {
+              id: id, // Update the Clerk ID
+              username: username || `user_${id}`, // Update username, provide fallback
+              img: image_url || null, // Update image
+              // Add any other fields that should be reset/updated on re-signup
+            },
+          });
+          console.log(`Successfully updated existing user ${emailToFind} with new Clerk ID ${id}.`);
+          return new Response("Existing user updated", { status: 200 });
+        } catch (updateErr) { // Inner catch block starts here
+          // emailToFind is now accessible here
+          console.error(`Error attempting to update existing user ${emailToFind}:`, updateErr);
+          // If the update fails, return a server error
+          return new Response("Error: Failed to update existing user!", { status: 500 });
+        } // End inner catch
+      } // End outer if (P2002)
+      // Handle other errors during creation
       return new Response("Error: Failed to create user!", { status: 500 });
     }
   }

@@ -2,9 +2,12 @@
 
 import React, { useActionState, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { updateUserProfile } from "@/action";
+// Import both server actions
+import { updateUserProfile, deleteUserAccount } from "@/action";
 import Image from "./Image"; // Use your Image component for previews
-import NextImage from "next/image"; // For local file previews
+import NextImage from "next/image"; // For previews and current images
+// Remove unused custom Image import if no longer needed elsewhere in this file
+// import Image from "./Image";
 
 // Revert to standard import
 import { Role } from "@prisma/client";
@@ -32,6 +35,12 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
   const coverPicRef = useRef<HTMLInputElement>(null);
 
   const [state, formAction, isPending] = useActionState(updateUserProfile, {
+    success: false,
+    error: null,
+  });
+
+  // Add action state for the delete action
+  const [deleteState, deleteAction, isDeletePending] = useActionState(deleteUserAccount, {
     success: false,
     error: null,
   });
@@ -105,7 +114,7 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
             {profilePicPreview ? (
               <NextImage src={profilePicPreview} alt="Preview" layout="fill" objectFit="cover" />
             ) : formData.img ? (
-              <Image path={formData.img} alt="Current Profile Picture" w={80} h={80} tr={true} />
+              <NextImage src={formData.img} alt="Current Profile Picture" layout="fill" objectFit="cover" />
             ) : (
               <span className="text-xs text-textGray flex items-center justify-center h-full">No Image</span>
             )}
@@ -139,7 +148,7 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
              {coverPicPreview ? (
               <NextImage src={coverPicPreview} alt="Preview" layout="fill" objectFit="cover" />
             ) : formData.cover ? (
-              <Image path={formData.cover} alt="Current Cover Picture" w={600} h={200} /> // Adjust w/h as needed
+              <NextImage src={formData.cover} alt="Current Cover Picture" layout="fill" objectFit="cover" />
             ) : (
                <span className="text-xs text-textGray flex items-center justify-center h-full">No Cover Image</span>
             )}
@@ -263,6 +272,28 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
           {isPending ? "Saving..." : "Save Changes"}
         </button>
         {state?.success && <span className="text-green-500">Profile updated successfully!</span>}
+{/* Delete Account Section */}
+      {/* Added pt-4 mt-4 and border-t for separation */}
+      <div className="pt-4 mt-4 border-t border-red-500/50">
+        <h3 className="text-lg font-semibold text-red-500 mb-2">Danger Zone</h3>
+        <p className="text-sm text-textGray mb-4">
+          Deleting your account is permanent and cannot be undone. All your data, including posts and profile information, will be removed.
+        </p>
+        {/* Add a separate form for the delete action */}
+        {/* Wire up the deleteAction */}
+        <form action={deleteAction}>
+           <button
+            type="submit"
+            disabled={isDeletePending} // Use pending state
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeletePending ? "Deleting..." : "Delete Account Permanently"} {/* Show pending text */}
+          </button>
+           {/* Show delete error message */}
+           {deleteState?.error && <span className="text-red-500 ml-4 text-sm">Error: {deleteState.error}</span>}
+           {/* Note: On success, Clerk should handle redirect/sign-out automatically */}
+        </form>
+      </div>
         {state?.error && <span className="text-red-500">Error: {state.error}</span>}
       </div>
     </form>

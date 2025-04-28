@@ -1,5 +1,6 @@
 import Link from "next/link";
-import Image from "./Image";
+// import Image from "./Image"; // Remove unused custom Image import
+import NextImage from "next/image"; // Import standard next/image
 import { prisma } from "@/prisma";
 import { auth } from "@clerk/nextjs/server";
 // import FollowButton from "./FollowButton"; // Removed unused import
@@ -50,13 +51,13 @@ const Recommendations = async () => {
           {/* IMAGE AND USER INFO - Wrapped in Link */}
           <Link href={`/${person.username}`} className="flex items-center gap-2 flex-grow min-w-0 mr-2">
             <div className="relative rounded-full overflow-hidden w-10 h-10 flex-shrink-0">
-              <Image
-                path={person.img || "/general/post.jpeg"} // Use a valid default path
+              <NextImage
+                src={person.img || "/general/noAvatar.png"} // Use src and standard fallback
                 alt={person.username}
-                w={40} // Adjust size if needed
-                h={40} // Adjust size if needed
+                fill // Use fill to cover container
                 className="object-cover" // Ensure image covers the area
               />
+
             </div>
             <div className="flex flex-col overflow-hidden"> {/* Added overflow-hidden */}
               <h1 className="text-md font-bold truncate">{person.displayName || person.username}</h1> {/* Added truncate */}

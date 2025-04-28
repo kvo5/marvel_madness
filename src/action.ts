@@ -449,3 +449,73 @@ export const updateUserProfile = async (
     return { success: false, error: "Failed to update profile." };
   }
 };
+// --- Delete User Account Action ---
+
+// Remove duplicate imports - auth is already imported at the top
+// Remove duplicate prisma import - already imported at the top
+import { Prisma } from "@prisma/client"; // Keep Prisma namespace import
+
+// Define return type for the action state
+type DeleteAccountState = {
+  success: boolean;
+  error: string | null;
+};
+
+export const deleteUserAccount = async (
+  previousState: DeleteAccountState, // Required for useActionState
+  formData: FormData // Required for form actions
+): Promise<DeleteAccountState> => {
+  const { userId } = await auth(); // Add await here
+
+  if (!userId) {
+    return { success: false, error: "User not authenticated." };
+  }
+
+  try {
+    // 1. Delete user from Clerk
+    console.log(`Attempting to delete user ${userId} from Clerk...`);
+    // Create a backend client instance
+    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    if (!clerk) {
+      console.error("Failed to create Clerk client. Check CLERK_SECRET_KEY.");
+      return { success: false, error: "Server configuration error." };
+    }
+    // Use the created client instance
+    await clerk.users.deleteUser(userId);
+    console.log(`Successfully deleted user ${userId} from Clerk.`);
+
+    // 2. Delete user from Prisma database
+    // It's crucial this happens *after* successful Clerk deletion,
+    // or you might orphan the Clerk account if DB deletion fails.
+    try {
+      console.log(`Attempting to delete user ${userId} from database...`);
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+      console.log(`Successfully deleted user ${userId} from database.`);
+    } catch (dbError) {
+      // Log DB error, but proceed as Clerk deletion was successful.
+      // Consider more robust error handling/logging here.
+      console.error(`Error deleting user ${userId} from database:`, dbError);
+       // If the user wasn't found in the DB (maybe already deleted?), log it but don't treat as critical failure
+      if (dbError instanceof Prisma.PrismaClientKnownRequestError && dbError.code === 'P2025') {
+         console.warn(`User ${userId} not found in database during deletion, possibly already removed.`);
+      } else {
+        // For other DB errors, you might want to log this more severely
+        // or notify an admin, as the Clerk user is gone but DB record remains.
+         return { success: false, error: "Failed to delete user data from database. Clerk account deleted." };
+      }
+    }
+
+    // Optionally: Trigger revalidation or redirect after successful deletion
+    // revalidatePath("/"); // Example revalidation
+
+    return { success: true, error: null };
+
+  } catch (clerkError: any) {
+    console.error(`Error deleting user ${userId} from Clerk:`, clerkError);
+    // Provide a more specific error message if possible
+    const errorMessage = clerkError?.errors?.[0]?.message || clerkError?.message || "An unknown error occurred during Clerk deletion.";
+    return { success: false, error: `Clerk API Error: ${errorMessage}` };
+  }
+};
