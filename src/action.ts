@@ -517,12 +517,18 @@ export const deleteUserAccount = async (
     // Type check the error before accessing properties
     let errorMessage = "An unknown error occurred during Clerk deletion.";
     if (clerkError instanceof Error) { // Check if it's a standard Error first
-       errorMessage = clerkError.message;
-       // Attempt to check for Clerk's specific structure more safely
-       if ('errors' in clerkError && Array.isArray((clerkError as any).errors)) {
-          const clerkErrors = (clerkError as any).errors;
-          if (clerkErrors.length > 0 && typeof clerkErrors[0]?.message === 'string') {
-             errorMessage = clerkErrors[0].message; // Use Clerk's message if available
+       errorMessage = clerkError.message; // Default to standard error message
+
+       // Safely check for Clerk's specific error structure
+       // Check if 'errors' property exists and is an array
+       if (typeof clerkError === 'object' && clerkError !== null && 'errors' in clerkError) {
+          const errors = (clerkError as { errors: unknown }).errors; // Assert only to check if it's an array
+          if (Array.isArray(errors) && errors.length > 0) {
+             // Check if the first element has a 'message' property that is a string
+             const firstError = errors[0];
+             if (typeof firstError === 'object' && firstError !== null && 'message' in firstError && typeof firstError.message === 'string') {
+                errorMessage = firstError.message; // Use Clerk's specific message
+             }
           }
        }
     } else if (typeof clerkError === 'string') { // Handle if error is just a string
