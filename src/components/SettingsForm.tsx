@@ -6,7 +6,7 @@ import { updateUserProfile } from "@/action";
 import Image from "./Image"; // Use your Image component for previews
 import NextImage from "next/image"; // For local file previews
 
-// Import Role enum from Prisma Client
+// Revert to standard import
 import { Role } from "@prisma/client";
 
 // Define a type for the user profile data we expect
@@ -16,7 +16,7 @@ type UserProfileData = {
   location: string | null;
   // job: string | null; // Remove
   // website: string | null; // Remove
-  role: Role | null; // Add role
+  role: Role | null; // Use direct import
   rank: string | null; // Add rank
   img: string | null; // Existing image path from ImageKit
   cover: string | null; // Existing cover path
@@ -222,6 +222,7 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
            className="w-full bg-inputGray p-2 rounded-md border border-borderGray outline-none focus:border-iconBlue appearance-none" // appearance-none to style dropdown arrow if needed
          >
            <option value="">Select Role...</option>
+           {/* Use direct import */}
            <option value={Role.DUELIST}>Duelist</option>
            <option value={Role.VANGUARD}>Vanguard</option>
            <option value={Role.STRATEGIST}>Strategist</option>

@@ -4,7 +4,7 @@ import NextImage from "next/image"; // Import standard next/image for avatar
 import Socket from "./Socket";
 import Notification from "./Notification";
 import { currentUser } from "@clerk/nextjs/server";
-import Logout from "./Logout";
+import Logout from "@/components/Logout"; // Use path alias
 
 
 const LeftBar = async () => {

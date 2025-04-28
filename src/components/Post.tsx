@@ -4,7 +4,8 @@ import PostInfo from "./PostInfo";
 import PostInteractions from "./PostInteractions";
 import Video from "./Video";
 import Link from "next/link";
-import { Post as PostType } from "@prisma/client";
+// Revert back to direct import workaround due to persistent TS error
+import { Post as PostType } from "../../node_modules/.prisma/client";
 import { format } from "timeago.js";
 
 type UserSummary = {

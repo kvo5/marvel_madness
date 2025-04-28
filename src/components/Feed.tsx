@@ -1,7 +1,44 @@
 import { prisma } from "@/prisma";
 import Post from "./Post";
 import { auth } from "@clerk/nextjs/server";
-import InfiniteFeed from "./InfiniteFeed";
+import InfiniteFeed from "@/components/InfiniteFeed"; // Use path alias
+// Define type for the result of the follow query
+type FollowIdResult = {
+  followingId: string;
+};
+
+// Define types based on the postIncludeQuery and the final post structure
+type UserSummary = {
+  displayName: string | null;
+  username: string;
+  img: string | null;
+};
+
+type EngagementCounts = {
+  likes: number;
+  rePosts: number;
+  comments: number;
+};
+
+type EngagementRelations = {
+  likes: { id: number }[];
+  rePosts: { id: number }[];
+  saves: { id: number }[];
+};
+
+// Base Post type from Prisma (adjust if needed based on actual Post model)
+// Import directly from generated client location
+import { Post as PostType } from "../../node_modules/.prisma/client";
+
+type IncludedPostData = PostType & {
+  user: UserSummary;
+  _count: EngagementCounts;
+} & EngagementRelations;
+
+// Final type for the posts array, including the optional rePost
+type PostWithDetails = IncludedPostData & {
+  rePost?: IncludedPostData | null;
+};
 
 const Feed = async ({ userProfileId }: { userProfileId?: string }) => {
   const { userId } = await auth();
@@ -20,7 +57,7 @@ const Feed = async ({ userProfileId }: { userProfileId?: string }) => {
                 where: { followerId: userId },
                 select: { followingId: true },
               })
-            ).map((follow) => follow.followingId),
+            ).map((follow: FollowIdResult) => follow.followingId), // Add type for 'follow'
           ],
         },
       };
@@ -48,7 +85,8 @@ const Feed = async ({ userProfileId }: { userProfileId?: string }) => {
 
   return (
     <div className="">
-      {posts.map((post) => (
+      {/* Add type for 'post' */}
+      {posts.map((post: PostWithDetails) => (
         <div key={post.id}>
           <Post post={post} />
         </div>

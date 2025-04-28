@@ -2,7 +2,8 @@
 
 import { useUser } from "@clerk/nextjs";
 import Image from "./Image";
-import Post from "./Post";
+import PostComponent from "./Post"; // Renamed import to avoid conflict
+// Revert to standard import
 import { Post as PostType } from "@prisma/client";
 import { useActionState, useEffect } from "react";
 import { addComment } from "@/action";
@@ -88,7 +89,8 @@ const Comments = ({
       )}
       {comments.map((comment) => (
         <div key={comment.id}>
-          <Post post={comment} type="comment" />
+          {/* Use renamed Post component import */}
+          <PostComponent post={comment} type="comment" />
         </div>
       ))}
     </div>

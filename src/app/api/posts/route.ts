@@ -1,6 +1,10 @@
 import { prisma } from "@/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest } from "next/server";
+// Define type for the result of the follow query
+type FollowIdResult = {
+  followingId: string;
+};
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -26,7 +30,7 @@ export async function GET(request: NextRequest) {
                   where: { followerId: userId },
                   select: { followingId: true },
                 })
-              ).map((follow) => follow.followingId),
+              ).map((follow: FollowIdResult) => follow.followingId), // Add type for 'follow'
             ],
           },
         };

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { UploadResponse } from "imagekit/dist/libs/interfaces";
 import { imagekit } from "./utils";
-import { Role } from "@prisma/client";
+import { Role } from "@prisma/client"; // Revert to standard import
 
 export const followUser = async (targetUserId: string) => {
   const { userId } = await auth();
@@ -296,7 +296,7 @@ export const updateUserProfile = async (
   const location = formData.get("location") as string | null;
   // const job = formData.get("job") as string | null; // Remove
   // const website = formData.get("website") as string | null; // Remove
-  const role = formData.get("role") as Role | null;
+  const role = formData.get("role") as Role | null; // Revert to Role
   const rank = formData.get("rank") as string | null; // Add rank
   const profilePicFile = formData.get("profilePic") as File | null;
   const coverPicFile = formData.get("coverPic") as File | null;
@@ -379,7 +379,7 @@ export const updateUserProfile = async (
     if (bio !== null) dataToUpdate.bio = bio;
     if (location !== null) dataToUpdate.location = location;
     // Role validation moved here for clarity
-    // Validate and add Role
+    // Validate and add Role using direct import
     const validRole = role && Object.values(Role).includes(role) ? role : null;
     if (validRole !== null) dataToUpdate.role = validRole;
     if (rank !== null) dataToUpdate.rank = rank; // Assuming empty string is acceptable if user clears rank

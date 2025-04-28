@@ -42,7 +42,13 @@ const FollowButton = ({
 
   return (
     <form action={followAction}>
-      <button className="py-2 px-4 bg-white text-black font-bold rounded-full">
+      <button
+        className={`py-2 px-4 font-bold rounded-full transition-colors duration-200 ease-in-out ${
+          optimisticFollow
+            ? "bg-red-600 text-white hover:bg-red-700" // Red style for "Unfollow"
+            : "bg-white text-black hover:bg-gray-200" // Original style for "Follow"
+        }`}
+      >
         {optimisticFollow ? "Unfollow" : "Follow"}
       </button>
     </form>

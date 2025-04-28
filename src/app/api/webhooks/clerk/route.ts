@@ -55,34 +55,100 @@ export async function POST(req: Request) {
   console.log(`Received webhook with ID ${id} and event type of ${eventType}`);
   console.log("Webhook payload:", body);
 
+  // Handle user creation
   if (eventType === "user.created") {
     try {
+      const { id, email_addresses, username, image_url } = evt.data;
+      const email = email_addresses?.[0]?.email_address;
+
+      if (!email) {
+        console.error("Error creating user: Email address is missing in webhook payload.");
+        return new Response("Error: Missing email address", { status: 400 });
+      }
+      if (!username) {
+        console.error("Error creating user: Username is missing in webhook payload.");
+        // Consider how to handle missing usernames - maybe generate one or require it in Clerk settings
+        return new Response("Error: Missing username", { status: 400 });
+      }
+
+
       await prisma.user.create({
         data: {
-          id: evt.data.id,
-          username: JSON.parse(body).data.username,
-          email: JSON.parse(body).data.email_addresses[0].email_address,
-          img: JSON.parse(body).image_url || "" 
+          id: id,
+          username: username, // Use username from evt.data
+          email: email,       // Use safely accessed email
+          img: image_url || null, // Use image_url from evt.data, default to null
         },
       });
-      return new Response("User created", { status: 200 });
+      console.log(`Successfully created user ${id} in database.`);
+      return new Response("User created", { status: 201 }); // Use 201 for resource creation
     } catch (err) {
-      console.log(err);
-      return new Response("Error: Failed to create a user!", {
-        status: 500,
-      });
+      console.error("Error processing user.created webhook:", err);
+      // Check for unique constraint violation (user might already exist)
+      if ((err as any).code === 'P2002') {
+         console.warn(`User ${evt.data.id} already exists in database.`);
+         return new Response("User already exists", { status: 409 }); // Conflict
+      }
+      return new Response("Error: Failed to create user!", { status: 500 });
     }
   }
 
+  // Handle user updates
+  if (eventType === "user.updated") {
+    try {
+      const { id, email_addresses, username, image_url } = evt.data;
+      const email = email_addresses?.[0]?.email_address;
+
+      // Prepare data for update, only include fields that might change
+      const dataToUpdate: { email?: string; username?: string; img?: string | null } = {};
+      if (email) dataToUpdate.email = email;
+      if (username) dataToUpdate.username = username;
+      // Allow setting img to null if image_url is empty/null in Clerk
+      dataToUpdate.img = image_url || null;
+
+
+      if (Object.keys(dataToUpdate).length === 0) {
+         console.log(`No relevant user data to update for user ${id}.`);
+         return new Response("No update needed", { status: 200 });
+      }
+
+      await prisma.user.update({
+        where: { id: id },
+        data: dataToUpdate,
+      });
+      console.log(`Successfully updated user ${id} in database.`);
+      return new Response("User updated", { status: 200 });
+    } catch (err) {
+      console.error("Error processing user.updated webhook:", err);
+       // Handle case where user might not exist during an update (though less likely)
+      if ((err as any).code === 'P2025') {
+         console.warn(`User ${evt.data.id} not found for update.`);
+         return new Response("User not found", { status: 404 });
+      }
+      return new Response("Error: Failed to update user!", { status: 500 });
+    }
+  }
+
+  // Handle user deletion
   if (eventType === "user.deleted") {
     try {
-      await prisma.user.delete({ where: { id: evt.data.id } });
+      // Use evt.data.id which should be available for deleted event
+      const userIdToDelete = evt.data.id;
+      if (!userIdToDelete) {
+         console.error("Error deleting user: ID missing in webhook payload.");
+         return new Response("Error: Missing user ID", { status: 400 });
+      }
+      await prisma.user.delete({ where: { id: userIdToDelete } });
+      console.log(`Successfully deleted user ${userIdToDelete} from database.`);
       return new Response("User deleted", { status: 200 });
     } catch (err) {
-      console.log(err);
-      return new Response("Error: Failed to create a user!", {
-        status: 500,
-      });
+      console.error("Error processing user.deleted webhook:", err);
+       // Handle case where user might not exist during deletion
+      if ((err as any).code === 'P2025') {
+         console.warn(`User ${evt.data.id} not found for deletion.`);
+         return new Response("User not found", { status: 404 });
+      }
+      return new Response("Error: Failed to delete user!", { status: 500 });
     }
   }
 
