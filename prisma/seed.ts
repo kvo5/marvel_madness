@@ -3,6 +3,13 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Delete existing data to avoid conflicts
+  await prisma.savedPosts.deleteMany({});
+  await prisma.like.deleteMany({});
+  await prisma.follow.deleteMany({});
+  await prisma.post.deleteMany({});
+  await prisma.user.deleteMany({});
+  
   // Create 5 users with unique details
   const users = [];
   for (let i = 1; i <= 5; i++) {
@@ -14,8 +21,8 @@ async function main() {
         displayName: `User ${i}`,
         bio: `Hi I'm user${i}. Welcome to my profile!`,
         location: `USA`,
-        job: `Developer`,
-        website: `google.com`,
+        img: `https://example.com/avatar${i}.jpg`,
+        cover: `https://example.com/cover${i}.jpg`,
       },
     });
     users.push(user);
@@ -30,6 +37,8 @@ async function main() {
         data: {
           desc: `Post ${j} by ${users[i].username}`,
           userId: users[i].id,
+          img: j % 2 === 0 ? `https://example.com/post${i}${j}.jpg` : null,
+          imgHeight: j % 2 === 0 ? 400 : null,
         },
       });
       posts.push(post);
@@ -68,7 +77,7 @@ async function main() {
       data: {
         desc: `Comment on Post ${posts[i].id} by ${users[(i + 1) % 5].username}`,
         userId: users[(i + 1) % 5].id,
-        parentPostId: posts[i].id, // Linking the comment to the post
+        parentPostId: posts[i].id,
       },
     });
     comments.push(comment);
@@ -81,15 +90,15 @@ async function main() {
     const repost = await prisma.post.create({
       data: {
         desc: `Repost of Post ${posts[i].id} by ${users[(i + 2) % 5].username}`,
-        userId: users[(i + 2) % 5].id, // The user who is reposting
-        rePostId: posts[i].id, // Linking to the original post being reposted
+        userId: users[(i + 2) % 5].id,
+        rePostId: posts[i].id,
       },
     });
     reposts.push(repost);
   }
   console.log('Reposts created.');
 
-  // Create saved posts (users save posts they like)
+  // Create saved posts
   await prisma.savedPosts.createMany({
     data: [
       { userId: users[0].id, postId: posts[1].id },
