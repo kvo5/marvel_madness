@@ -55,7 +55,7 @@ const Comments = ({
           <div className="relative w-10 h-10 rounded-full overflow-hidden -z-10">
             <Image
               src={user?.imageUrl}
-              alt="Lama Dev"
+              alt="Marvel Madness"
               w={100}
               h={100}
               tr={true}

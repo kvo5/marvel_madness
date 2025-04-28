@@ -5,8 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import QueryProvider from "@/providers/QueryProvider";
 
 export const metadata: Metadata = {
-  title: "Lama Dev X Clone",
-  description: "Next.js social media application project",
+  title: "Marvel Madness",
+  description: "Next.js Marvel Rivials social media application project",
 };
 
 export default function AppLayout({
