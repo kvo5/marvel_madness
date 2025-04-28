@@ -1,9 +1,9 @@
 import Feed from "@/components/Feed";
 import FollowButton from "@/components/FollowButton";
-// Re-enable import for custom Image component
+// Keep custom Image component for cover for now
 import Image from "@/components/Image";
-// Remove import for next/image
-// import Image from "next/image";
+// Import standard next/image for avatar
+import NextImage from "next/image";
 import { prisma } from "@/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
@@ -69,14 +69,14 @@ const UserPage = async ({
           </div>
           {/* AVATAR */}
           <div className="w-1/5 aspect-square rounded-full overflow-hidden border-4 border-black bg-gray-300 absolute left-4 -translate-y-1/2">
-            {/* Revert to original custom Image component for avatar */}
-            <Image
-              path={user.img || "general/noAvatar.png"} // Use path prop as before
+            {/* Use standard NextImage for avatar */}
+            <NextImage
+              src={user.img || "/general/noAvatar.png"} // Use src prop with URL from DB
               alt="User avatar"
-              w={100} // Original width
-              h={100} // Original height
-              tr={true} // Original transformation prop
+              fill // Use fill to cover the container
+              className="object-cover" // Ensure image covers the area
             />
+
           </div>
         </div>
         <div className="flex w-full items-center justify-end gap-2 p-2">
@@ -119,8 +119,8 @@ const UserPage = async ({
               <div className="flex items-center gap-1">
                  {/* Use standard img tag for local public assets */}
                 <img
-                  // Extract only the rank name (e.g., "DIAMOND" from "DIAMOND II") for the filename
-                  src={`/ranks/${user.rank.split(" ")[0]}_Rank.webp`}
+                  // Extract rank name, format to match filename case (e.g., "Grandmaster" from "GRANDMASTER III")
+                  src={`/ranks/${user.rank.split(" ")[0].charAt(0).toUpperCase() + user.rank.split(" ")[0].slice(1).toLowerCase()}_Rank.webp`}
                   alt={`${user.rank} Rank`}
                   width={16}
                   height={16}
@@ -155,11 +155,11 @@ const UserPage = async ({
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <span className="font-bold">{user._count.followers}</span>
-              <span className="text-textGray text-[15px]">Followers</span>
+              <span className="text-textGray text-[15px]">Following</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold">{user._count.followings}</span>
-              <span className="text-textGray text-[15px]">Followings</span>
+              <span className="text-textGray text-[15px]">followers</span>
             </div>
           </div>
         </div>
