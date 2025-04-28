@@ -1,5 +1,6 @@
 import { imagekit } from "@/utils";
-import Image from "./Image";
+import Image from "./Image"; // Keep for post media
+import NextImage from "next/image"; // Import standard next/image for avatars
 import PostInfo from "./PostInfo";
 import PostInteractions from "./PostInteractions";
 import Video from "./Video";
@@ -64,13 +65,13 @@ const Post = ({
             type === "status" && "hidden"
           } relative w-10 h-10 rounded-full overflow-hidden -z-10`}
         >
-          <Image
-            path={originalPost.user.img || "general/noAvatar.png"}
-            alt=""
-            w={100}
-            h={100}
-            tr={true}
+          <NextImage
+            src={originalPost.user.img || "/general/noAvatar.png"} // Use src prop
+            alt="User avatar"
+            fill // Use fill to cover container
+            className="object-cover" // Ensure image covers area
           />
+
         </div>
 
         {/* CONTENT */}
@@ -86,13 +87,13 @@ const Post = ({
                   type !== "status" && "hidden"
                 } relative w-10 h-10 rounded-full overflow-hidden`}
               >
-                <Image
-                  path={originalPost.user.img || "general/noAvatar.png"}
-                  alt=""
-                  w={100}
-                  h={100}
-                  tr={true}
+                <NextImage
+                  src={originalPost.user.img || "/general/noAvatar.png"} // Use src prop
+                  alt="User avatar"
+                  fill // Use fill to cover container
+                  className="object-cover" // Ensure image covers area
                 />
+
               </div>
               <div
                 className={`flex items-center gap-2 flex-wrap ${
