@@ -106,7 +106,7 @@ const UserPage = async ({
               <div className="flex items-center gap-1">
                 {/* Use standard img tag for local public assets */}
                 <img
-                  src={`/ranks/${user.role}_Icon.webp`} // Path relative to public folder
+                  src={`/ranks/${user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()}_Icon.webp`} // Format role name to match file case
                   alt={`${user.role} Role`}
                   width={16}
                   height={16}

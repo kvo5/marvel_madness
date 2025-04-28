@@ -11,6 +11,7 @@ const SettingsPage = async () => {
     redirect('/sign-in'); // Redirect if not logged in
   }
 
+  console.log(`[SettingsPage] Attempting to fetch DB user for Clerk ID: ${clerkUser.id}`); // Log the ID being used
   // Fetch user data from your database using the clerk user ID
   const dbUser = await prisma.user.findUnique({
     where: { id: clerkUser.id },
@@ -28,10 +29,12 @@ const SettingsPage = async () => {
     },
   });
 
+  console.log(`[SettingsPage] Prisma findUnique result for ID ${clerkUser.id}:`, dbUser ? 'Found' : 'Not Found'); // Log the result
+
   if (!dbUser) {
     // This case might happen if the webhook hasn't created the user yet
     // Or if there's a data inconsistency. Handle appropriately.
-    console.error(`User ${clerkUser.id} not found in database.`);
+    console.error(`[SettingsPage] User ${clerkUser.id} not found in database.`);
     // You might want to show an error message or redirect
     return <div className="p-4">Error: User data not found. Please try again later.</div>;
   }

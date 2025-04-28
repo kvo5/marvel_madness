@@ -1,6 +1,6 @@
 "use client";
 
-import { likePost, rePost, savePost } from "@/action";
+import { likePost } from "@/action"; // Remove rePost, savePost
 import { socket } from "@/socket";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
@@ -11,22 +11,23 @@ const PostInteractions = ({
   postId,
   count,
   isLiked,
-  isRePosted,
-  isSaved,
+  // isRePosted, // Remove from destructuring
+  // isSaved, // Remove from destructuring
 }: {
   username: string;
   postId: number;
-  count: { likes: number; rePosts: number; comments: number };
+  count: { likes: number; rePosts: number; comments: number }; // Keep rePosts in count for now if needed elsewhere, or remove if truly unused
   isLiked: boolean;
-  isRePosted: boolean;
-  isSaved: boolean;
+  // isRePosted: boolean; // Removed from type
+  // isSaved: boolean; // Removed from type
 }) => {
+  // Simplify state
   const [state, setState] = useState({
     likes: count.likes,
     isLiked: isLiked,
-    rePosts: count.rePosts,
-    isRePosted,
-    isSaved,
+    // rePosts: count.rePosts, // Remove
+    // isRePosted, // Remove
+    // isSaved, // Remove
   });
 
   const { user } = useUser();
@@ -56,44 +57,13 @@ const PostInteractions = ({
     });
   };
 
-  const rePostAction = async () => {
-    if (!user) return;
+  // Remove rePostAction
+  // Remove saveAction
 
-    if (!optimisticCount.isRePosted) {
-      socket.emit("sendNotification", {
-        receiverUsername: username,
-        data: {
-          senderUsername: user.username,
-          type: "rePost",
-          link: `/${username}/status/${postId}`,
-        },
-      });
-    }
-
-    addOptimisticCount("rePost");
-    await rePost(postId);
-    setState((prev) => {
-      return {
-        ...prev,
-        rePosts: prev.isRePosted ? prev.rePosts - 1 : prev.rePosts + 1,
-        isRePosted: !prev.isRePosted,
-      };
-    });
-  };
-  const saveAction = async () => {
-    addOptimisticCount("save");
-    await savePost(postId);
-    setState((prev) => {
-      return {
-        ...prev,
-        isSaved: !prev.isSaved,
-      };
-    });
-  };
-
+  // Simplify useOptimistic
   const [optimisticCount, addOptimisticCount] = useOptimistic(
     state,
-    (prev, type: "like" | "rePost" | "save") => {
+    (prev, type: "like") => { // Only handle 'like' type
       if (type === "like") {
         return {
           ...prev,
@@ -101,25 +71,14 @@ const PostInteractions = ({
           isLiked: !prev.isLiked,
         };
       }
-      if (type === "rePost") {
-        return {
-          ...prev,
-          rePosts: prev.isRePosted ? prev.rePosts - 1 : prev.rePosts + 1,
-          isRePosted: !prev.isRePosted,
-        };
-      }
-      if (type === "save") {
-        return {
-          ...prev,
-          isSaved: !prev.isSaved,
-        };
-      }
+      // Remove rePost and save logic
       return prev;
     }
   );
   return (
     <div className="flex items-center justify-between gap-4 lg:gap-16 my-2 text-textGray">
-      <div className="flex items-center justify-between flex-1">
+      {/* Adjust layout if needed after removing items */}
+      <div className="flex items-center justify-start gap-8 flex-1"> {/* Changed justify-between to justify-start and added gap */}
         {/* COMMENTS */}
         <Link href={`/${username}/status/${postId}`} className="flex items-center gap-2 cursor-pointer group">
           <svg
@@ -137,33 +96,8 @@ const PostInteractions = ({
             {count.comments}
           </span>
         </Link>
-        {/* REPOST */}
-        <form action={rePostAction}>
-          <button className="flex items-center gap-2 cursor-pointer group">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-            >
-              <path
-                className={`${
-                  optimisticCount.isRePosted
-                    ? "fill-iconGreen"
-                    : "fill-textGray"
-                } group-hover:fill-iconGreen`}
-                d="M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V20H7.75c-2.347 0-4.25-1.9-4.25-4.25V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25c2.347 0 4.25 1.9 4.25 4.25v7.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L18 15.62V8.25c0-.97-.784-1.75-1.75-1.75z"
-              />
-            </svg>
-            <span
-              className={`${
-                optimisticCount.isRePosted ? "text-iconGreen" : "text-textGray"
-              } group-hover:text-iconGreen text-sm`}
-            >
-              {optimisticCount.rePosts}
-            </span>
-          </button>
-        </form>
+        {/* REPOST Section Removed */}
+
         {/* LIKE */}
         <form action={likeAction}>
           <button className="flex items-center gap-2 cursor-pointer group">
@@ -190,23 +124,7 @@ const PostInteractions = ({
           </button>
         </form>
       </div>
-      <form action={saveAction} className="flex items-center gap-2">
-        <button className="cursor-pointer group">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-          >
-            <path
-              className={`${
-                optimisticCount.isSaved ? "fill-iconBlue" : "fill-textGray"
-              } group-hover:fill-iconBlue`}
-              d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5zM6.5 4c-.276 0-.5.22-.5.5v14.56l6-4.29 6 4.29V4.5c0-.28-.224-.5-.5-.5h-11z"
-            />
-          </svg>
-        </button>
-      </form>
+      {/* SAVE (Bookmark) Section Removed */}
     </div>
   );
 };

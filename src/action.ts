@@ -340,7 +340,8 @@ export const updateUserProfile = async (
     console.log("Starting profile update for user:", userId); // Log start of action
     let profilePicPath: string | undefined = undefined; // For DB
     let profilePicUrl: string | undefined = undefined; // For Clerk
-    let coverPicPath: string | undefined = undefined;
+    let coverPicPath: string | undefined = undefined; // Keep path for potential direct use? Or remove if only URL is needed.
+    let coverPicUrl: string | undefined = undefined; // Add variable for cover URL
 
     // Upload profile picture if provided
     if (profilePicFile && profilePicFile.size > 0) {
@@ -363,8 +364,9 @@ export const updateUserProfile = async (
        console.log("Attempting to upload cover picture..."); // Log start
        const result = await uploadFile(coverPicFile, "/cover_pics");
        if (result) {
-         coverPicPath = result.filePath;
-         console.log("Cover picture uploaded:", coverPicPath); // Log success
+         coverPicPath = result.filePath; // Store path (optional)
+         coverPicUrl = result.url; // Store URL
+         console.log("Cover picture uploaded:", coverPicPath, coverPicUrl); // Log both
        } else {
          console.error("Cover picture upload failed (uploadFile returned null/undefined).");
          // Potentially return error here
@@ -380,7 +382,7 @@ export const updateUserProfile = async (
       role?: Role;
       rank?: string;
       img?: string;
-      cover?: string;
+      cover?: string; // This will now store the full URL
     } = {};
     // Use nullish coalescing or check explicitly to avoid saving empty strings if not intended
     if (displayName !== null) dataToUpdate.displayName = displayName;
@@ -420,7 +422,8 @@ export const updateUserProfile = async (
       } // Closing brace for inner try...catch
     } // Closing brace for outer 'else' block
   } // Closing brace for 'if (profilePicUrl !== undefined)'
-  if (coverPicPath !== undefined) dataToUpdate.cover = coverPicPath;
+  // Store the full URL in the database if available
+  if (coverPicUrl !== undefined) dataToUpdate.cover = coverPicUrl;
 
   // Only update if there's something to change
     if (Object.keys(dataToUpdate).length === 0) {
@@ -468,41 +471,46 @@ export const deleteUserAccount = async (
   const { userId } = await auth(); // Add await here
 
   if (!userId) {
+    console.log("[DeleteAccount] User not authenticated."); // Log auth failure
     return { success: false, error: "User not authenticated." };
   }
 
+  console.log(`[DeleteAccount] Action started for user: ${userId}`); // Log start
+
   try {
     // 1. Delete user from Clerk
-    console.log(`Attempting to delete user ${userId} from Clerk...`);
+    console.log(`[DeleteAccount] Attempting to delete user ${userId} from Clerk...`);
     // Create a backend client instance
     const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
     if (!clerk) {
-      console.error("Failed to create Clerk client. Check CLERK_SECRET_KEY.");
+      console.error("[DeleteAccount] Failed to create Clerk client. Check CLERK_SECRET_KEY.");
       return { success: false, error: "Server configuration error." };
     }
+    console.log("[DeleteAccount] Clerk client created."); // Log client creation
     // Use the created client instance
     await clerk.users.deleteUser(userId);
-    console.log(`Successfully deleted user ${userId} from Clerk.`);
+    console.log(`[DeleteAccount] Successfully deleted user ${userId} from Clerk.`);
 
     // 2. Delete user from Prisma database
     // It's crucial this happens *after* successful Clerk deletion,
     // or you might orphan the Clerk account if DB deletion fails.
     try {
-      console.log(`Attempting to delete user ${userId} from database...`);
+      console.log(`[DeleteAccount] Attempting to delete user ${userId} from database...`);
       await prisma.user.delete({
         where: { id: userId },
       });
-      console.log(`Successfully deleted user ${userId} from database.`);
+      console.log(`[DeleteAccount] Successfully deleted user ${userId} from database.`);
     } catch (dbError) {
       // Log DB error, but proceed as Clerk deletion was successful.
       // Consider more robust error handling/logging here.
-      console.error(`Error deleting user ${userId} from database:`, dbError);
+      console.error(`[DeleteAccount] Error deleting user ${userId} from database:`, dbError);
        // If the user wasn't found in the DB (maybe already deleted?), log it but don't treat as critical failure
       if (dbError instanceof Prisma.PrismaClientKnownRequestError && dbError.code === 'P2025') {
-         console.warn(`User ${userId} not found in database during deletion, possibly already removed.`);
+         console.warn(`[DeleteAccount] User ${userId} not found in database during deletion, possibly already removed.`);
       } else {
         // For other DB errors, you might want to log this more severely
         // or notify an admin, as the Clerk user is gone but DB record remains.
+         console.error("[DeleteAccount] DB deletion failed, but Clerk account was deleted."); // Log specific state
          return { success: false, error: "Failed to delete user data from database. Clerk account deleted." };
       }
     }
@@ -510,10 +518,11 @@ export const deleteUserAccount = async (
     // Optionally: Trigger revalidation or redirect after successful deletion
     // revalidatePath("/"); // Example revalidation
 
+    console.log(`[DeleteAccount] Action completed successfully for user: ${userId}`); // Log success
     return { success: true, error: null };
 
-  } catch (clerkError: unknown) { // Change 'any' to 'unknown'
-    console.error(`Error deleting user ${userId} from Clerk:`, clerkError);
+  } catch (clerkError: unknown) { // Keep 'unknown'
+    console.error(`[DeleteAccount] Error deleting user ${userId} from Clerk:`, clerkError);
     // Type check the error before accessing properties
     let errorMessage = "An unknown error occurred during Clerk deletion.";
     if (clerkError instanceof Error) { // Check if it's a standard Error first
@@ -535,6 +544,7 @@ export const deleteUserAccount = async (
        errorMessage = clerkError;
     }
     // Keep the underscore prefixes for unused variables
+    console.error(`[DeleteAccount] Action failed for user ${userId} due to Clerk error: ${errorMessage}`); // Log failure reason
     return { success: false, error: `Clerk API Error: ${errorMessage}` };
   }
 };
