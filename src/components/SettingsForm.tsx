@@ -2,12 +2,10 @@
 
 import React, { useActionState, useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-// Import both server actions
-import { updateUserProfile, deleteUserAccount } from "@/action";
-import Image from "./Image"; // Use your Image component for previews
+// Import only updateUserProfile server action
+import { updateUserProfile } from "@/action";
+
 import NextImage from "next/image"; // For previews and current images
-// Remove unused custom Image import if no longer needed elsewhere in this file
-// import Image from "./Image";
 
 // Revert to standard import
 import { Role } from "@prisma/client";
@@ -17,12 +15,10 @@ type UserProfileData = {
   displayName: string | null;
   bio: string | null;
   location: string | null;
-  // job: string | null; // Remove
-  // website: string | null; // Remove
   role: Role | null; // Use direct import
   rank: string | null; // Add rank
-  img: string | null; // Existing image path from ImageKit
-  cover: string | null; // Existing cover path
+  img: string | null; // Existing image path from ImageKit (should be URL now)
+  cover: string | null; // Existing cover path (should be URL now)
   username: string; // Needed for revalidation
 };
 
@@ -39,16 +35,10 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
     error: null,
   });
 
-  // Add action state for the delete action
-  const [deleteState, deleteAction, isDeletePending] = useActionState(deleteUserAccount, {
-    success: false,
-    error: null,
-  });
+  // Removed action state for delete action
 
   useEffect(() => {
     // Update local state if initialData changes (e.g., after successful update)
-    // This might not be strictly necessary if revalidatePath works perfectly,
-    // but can help ensure UI consistency.
     setFormData(initialData);
     setProfilePicPreview(null); // Clear previews after update
     setCoverPicPreview(null);
@@ -93,13 +83,8 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
     return <div>Please log in to view settings.</div>;
   }
 
-  // Remove the manual handleSubmit, formAction will handle it via the action prop
-  // const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => { ... };
-
-
   return (
     // Use the action prop directly with formAction
-    // Remove onSubmit
     <form action={formAction} className="space-y-6">
        {/* Add hidden input for username needed by the server action */}
       <input type="hidden" name="username" value={user?.username || ''} />
@@ -272,30 +257,9 @@ const SettingsForm = ({ initialData }: { initialData: UserProfileData }) => {
           {isPending ? "Saving..." : "Save Changes"}
         </button>
         {state?.success && <span className="text-green-500">Profile updated successfully!</span>}
-{/* Delete Account Section */}
-      {/* Added pt-4 mt-4 and border-t for separation */}
-      <div className="pt-4 mt-4 border-t border-red-500/50">
-        <h3 className="text-lg font-semibold text-red-500 mb-2">Danger Zone</h3>
-        <p className="text-sm text-textGray mb-4">
-          Deleting your account is permanent and cannot be undone. All your data, including posts and profile information, will be removed.
-        </p>
-        {/* Add a separate form for the delete action */}
-        {/* Wire up the deleteAction */}
-        <form action={deleteAction}>
-           <button
-            type="submit"
-            disabled={isDeletePending} // Use pending state
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isDeletePending ? "Deleting..." : "Delete Account Permanently"} {/* Show pending text */}
-          </button>
-           {/* Show delete error message */}
-           {deleteState?.error && <span className="text-red-500 ml-4 text-sm">Error: {deleteState.error}</span>}
-           {/* Note: On success, Clerk should handle redirect/sign-out automatically */}
-        </form>
+        {state?.error && <span className="text-red-500 ml-4">Error: {state.error}</span>} {/* Moved error display here */}
       </div>
-        {state?.error && <span className="text-red-500">Error: {state.error}</span>}
-      </div>
+      {/* Delete Account Section Removed */}
     </form>
   );
 };

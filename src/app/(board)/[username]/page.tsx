@@ -1,8 +1,9 @@
 import Feed from "@/components/Feed";
 import FollowButton from "@/components/FollowButton";
 // Keep custom Image component for cover for now
-import Image from "@/components/Image";
-// Import standard next/image for avatar
+// Remove custom Image import if no longer needed
+// import Image from "@/components/Image";
+// Import standard next/image for avatar and cover
 import NextImage from "next/image";
 import { prisma } from "@/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -58,13 +59,13 @@ const UserPage = async ({
         <div className="relative w-full -z-10">
           {/* COVER */}
           <div className="w-full aspect-[3/1] relative">
-            {/* Revert to original custom Image component for cover */}
-            <Image
-              path={user.cover || "general/noCover.png"} // Use path prop as before
+            {/* Use standard NextImage for cover */}
+            <NextImage
+              src={user.cover || "/general/noCover.png"} // Use src prop with URL from DB
               alt="Cover image"
-              w={600} // Original width
-              h={200} // Original height
-              tr={true} // Original transformation prop
+              fill // Use fill to cover the container
+              className="object-cover" // Ensure image covers the area
+              priority // Add priority for LCP element
             />
           </div>
           {/* AVATAR */}

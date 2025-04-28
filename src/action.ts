@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { UploadResponse } from "imagekit/dist/libs/interfaces";
 import { imagekit } from "./utils";
 import { Role } from "@prisma/client"; // Revert to standard import
+import { Prisma } from "@prisma/client"; // Keep Prisma namespace import for now
 
 export const followUser = async (targetUserId: string) => {
   const { userId } = await auth();
@@ -452,99 +453,4 @@ export const updateUserProfile = async (
     return { success: false, error: "Failed to update profile." };
   }
 };
-// --- Delete User Account Action ---
-
-// Remove duplicate imports - auth is already imported at the top
-// Remove duplicate prisma import - already imported at the top
-import { Prisma } from "@prisma/client"; // Keep Prisma namespace import
-
-// Define return type for the action state
-type DeleteAccountState = {
-  success: boolean;
-  error: string | null;
-};
-
-export const deleteUserAccount = async (
-  _previousState: DeleteAccountState, // Prefix with _ for unused state
-  _formData: FormData // Prefix with _ for unused form data
-): Promise<DeleteAccountState> => {
-  const { userId } = await auth(); // Add await here
-
-  if (!userId) {
-    console.log("[DeleteAccount] User not authenticated."); // Log auth failure
-    return { success: false, error: "User not authenticated." };
-  }
-
-  console.log(`[DeleteAccount] Action started for user: ${userId}`); // Log start
-
-  try {
-    // 1. Delete user from Clerk
-    console.log(`[DeleteAccount] Attempting to delete user ${userId} from Clerk...`);
-    // Create a backend client instance
-    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-    if (!clerk) {
-      console.error("[DeleteAccount] Failed to create Clerk client. Check CLERK_SECRET_KEY.");
-      return { success: false, error: "Server configuration error." };
-    }
-    console.log("[DeleteAccount] Clerk client created."); // Log client creation
-    // Use the created client instance
-    await clerk.users.deleteUser(userId);
-    console.log(`[DeleteAccount] Successfully deleted user ${userId} from Clerk.`);
-
-    // 2. Delete user from Prisma database
-    // It's crucial this happens *after* successful Clerk deletion,
-    // or you might orphan the Clerk account if DB deletion fails.
-    try {
-      console.log(`[DeleteAccount] Attempting to delete user ${userId} from database...`);
-      await prisma.user.delete({
-        where: { id: userId },
-      });
-      console.log(`[DeleteAccount] Successfully deleted user ${userId} from database.`);
-    } catch (dbError) {
-      // Log DB error, but proceed as Clerk deletion was successful.
-      // Consider more robust error handling/logging here.
-      console.error(`[DeleteAccount] Error deleting user ${userId} from database:`, dbError);
-       // If the user wasn't found in the DB (maybe already deleted?), log it but don't treat as critical failure
-      if (dbError instanceof Prisma.PrismaClientKnownRequestError && dbError.code === 'P2025') {
-         console.warn(`[DeleteAccount] User ${userId} not found in database during deletion, possibly already removed.`);
-      } else {
-        // For other DB errors, you might want to log this more severely
-        // or notify an admin, as the Clerk user is gone but DB record remains.
-         console.error("[DeleteAccount] DB deletion failed, but Clerk account was deleted."); // Log specific state
-         return { success: false, error: "Failed to delete user data from database. Clerk account deleted." };
-      }
-    }
-
-    // Optionally: Trigger revalidation or redirect after successful deletion
-    // revalidatePath("/"); // Example revalidation
-
-    console.log(`[DeleteAccount] Action completed successfully for user: ${userId}`); // Log success
-    return { success: true, error: null };
-
-  } catch (clerkError: unknown) { // Keep 'unknown'
-    console.error(`[DeleteAccount] Error deleting user ${userId} from Clerk:`, clerkError);
-    // Type check the error before accessing properties
-    let errorMessage = "An unknown error occurred during Clerk deletion.";
-    if (clerkError instanceof Error) { // Check if it's a standard Error first
-       errorMessage = clerkError.message; // Default to standard error message
-
-       // Safely check for Clerk's specific error structure
-       // Check if 'errors' property exists and is an array
-       if (typeof clerkError === 'object' && clerkError !== null && 'errors' in clerkError) {
-          const errors = (clerkError as { errors: unknown }).errors; // Assert only to check if it's an array
-          if (Array.isArray(errors) && errors.length > 0) {
-             // Check if the first element has a 'message' property that is a string
-             const firstError = errors[0];
-             if (typeof firstError === 'object' && firstError !== null && 'message' in firstError && typeof firstError.message === 'string') {
-                errorMessage = firstError.message; // Use Clerk's specific message
-             }
-          }
-       }
-    } else if (typeof clerkError === 'string') { // Handle if error is just a string
-       errorMessage = clerkError;
-    }
-    // Keep the underscore prefixes for unused variables
-    console.error(`[DeleteAccount] Action failed for user ${userId} due to Clerk error: ${errorMessage}`); // Log failure reason
-    return { success: false, error: `Clerk API Error: ${errorMessage}` };
-  }
-};
+// --- Delete User Account Action Removed ---
