@@ -516,15 +516,19 @@ export const deleteUserAccount = async (
     console.error(`Error deleting user ${userId} from Clerk:`, clerkError);
     // Type check the error before accessing properties
     let errorMessage = "An unknown error occurred during Clerk deletion.";
-    if (typeof clerkError === 'object' && clerkError !== null) {
-      // Check for Clerk specific error structure (adjust based on actual Clerk error format)
-      const errors = (clerkError as any)?.errors;
-      if (Array.isArray(errors) && errors.length > 0 && errors[0]?.message) {
-        errorMessage = errors[0].message;
-      } else if ((clerkError as Error)?.message) { // Check for standard Error message
-        errorMessage = (clerkError as Error).message;
-      }
+    if (clerkError instanceof Error) { // Check if it's a standard Error first
+       errorMessage = clerkError.message;
+       // Attempt to check for Clerk's specific structure more safely
+       if ('errors' in clerkError && Array.isArray((clerkError as any).errors)) {
+          const clerkErrors = (clerkError as any).errors;
+          if (clerkErrors.length > 0 && typeof clerkErrors[0]?.message === 'string') {
+             errorMessage = clerkErrors[0].message; // Use Clerk's message if available
+          }
+       }
+    } else if (typeof clerkError === 'string') { // Handle if error is just a string
+       errorMessage = clerkError;
     }
+    // Keep the underscore prefixes for unused variables
     return { success: false, error: `Clerk API Error: ${errorMessage}` };
   }
 };
