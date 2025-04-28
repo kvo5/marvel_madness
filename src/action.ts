@@ -462,8 +462,8 @@ type DeleteAccountState = {
 };
 
 export const deleteUserAccount = async (
-  previousState: DeleteAccountState, // Required for useActionState
-  formData: FormData // Required for form actions
+  _previousState: DeleteAccountState, // Prefix with _ for unused state
+  _formData: FormData // Prefix with _ for unused form data
 ): Promise<DeleteAccountState> => {
   const { userId } = await auth(); // Add await here
 
@@ -512,10 +512,19 @@ export const deleteUserAccount = async (
 
     return { success: true, error: null };
 
-  } catch (clerkError: any) {
+  } catch (clerkError: unknown) { // Change 'any' to 'unknown'
     console.error(`Error deleting user ${userId} from Clerk:`, clerkError);
-    // Provide a more specific error message if possible
-    const errorMessage = clerkError?.errors?.[0]?.message || clerkError?.message || "An unknown error occurred during Clerk deletion.";
+    // Type check the error before accessing properties
+    let errorMessage = "An unknown error occurred during Clerk deletion.";
+    if (typeof clerkError === 'object' && clerkError !== null) {
+      // Check for Clerk specific error structure (adjust based on actual Clerk error format)
+      const errors = (clerkError as any)?.errors;
+      if (Array.isArray(errors) && errors.length > 0 && errors[0]?.message) {
+        errorMessage = errors[0].message;
+      } else if ((clerkError as Error)?.message) { // Check for standard Error message
+        errorMessage = (clerkError as Error).message;
+      }
+    }
     return { success: false, error: `Clerk API Error: ${errorMessage}` };
   }
 };
