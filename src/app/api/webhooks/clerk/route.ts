@@ -2,6 +2,7 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { prisma } from "@/prisma";
+import { Prisma } from "@prisma/client"; // Import Prisma namespace for types
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET;
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("Error processing user.created webhook:", err);
       // Check for unique constraint violation (user might already exist)
-      if ((err as any).code === 'P2002') {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
          console.warn(`User ${evt.data.id} already exists in database.`);
          return new Response("User already exists", { status: 409 }); // Conflict
       }
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("Error processing user.updated webhook:", err);
        // Handle case where user might not exist during an update (though less likely)
-      if ((err as any).code === 'P2025') {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
          console.warn(`User ${evt.data.id} not found for update.`);
          return new Response("User not found", { status: 404 });
       }
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("Error processing user.deleted webhook:", err);
        // Handle case where user might not exist during deletion
-      if ((err as any).code === 'P2025') {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
          console.warn(`User ${evt.data.id} not found for deletion.`);
          return new Response("User not found", { status: 404 });
       }

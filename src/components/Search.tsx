@@ -13,14 +13,19 @@ type SearchUser = {
 };
 
 // Simple debounce function
-const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
+// Use specific generics A for args array type, R for the original function's return type.
+// The debounced function itself returns void.
+const debounce = <A extends unknown[], R>(func: (...args: A) => R, waitFor: number): ((...args: A) => void) => {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  const debounced = (...args: Parameters<F>) => {
+  // The debounced function takes arguments of type A and returns void.
+  const debounced = (...args: A): void => {
     if (timeout !== null) {
       clearTimeout(timeout);
+      // Reset timeout to null after clearing
       timeout = null;
     }
+    // Call the original function, ignoring its return value R.
     timeout = setTimeout(() => func(...args), waitFor);
   };
 

@@ -373,7 +373,15 @@ export const updateUserProfile = async (
     }
 
     // --- Prepare Data for Prisma ---
-    const dataToUpdate: { [key: string]: any } = {};
+    const dataToUpdate: {
+      displayName?: string;
+      bio?: string;
+      location?: string;
+      role?: Role;
+      rank?: string;
+      img?: string;
+      cover?: string;
+    } = {};
     // Use nullish coalescing or check explicitly to avoid saving empty strings if not intended
     if (displayName !== null) dataToUpdate.displayName = displayName;
     if (bio !== null) dataToUpdate.bio = bio;
